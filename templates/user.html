@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Профиль | Лаборатория аналитики</title>
+    <style>
+        /* Общие стили как в experiments.html */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #f8f9fa;
+            color: #2c3e50;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            position: relative;
+        }
+
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .profile-info {
+            display: grid;
+            gap: 1.5rem;
+            padding: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .info-label {
+            font-weight: 600;
+            min-width: 120px;
+            color: #e74c3c;
+        }
+
+        .info-value {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            flex-grow: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="profile-header">
+            <h1>Мой профиль</h1>
+            <button class="btn btn-secondary" onclick="location.href='/experiments'">Назад к экспериментам</button>
+        </div>
+
+        <div class="profile-info">
+            <div class="info-item">
+                <span class="info-label">Имя:</span>
+                <span class="info-value">{{ user.name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Должность:</span>
+                <span class="info-value">{{ user.post }}</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Эксперименты | Лаборатория аналитики</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #f8f9fa;
+            color: #2c3e50;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: #e74c3c;
+            font-size: 2rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            flex-grow: 1;
+            padding: 12px 20px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #e74c3c;
+            outline: none;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.1);
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.2);
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #fff5f5;
+            transform: scale(1.005);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .status-in-progress {
+            background: #ffecc2;
+            color: #ffae00;
+        }
+
+        .status-completed {
+            background: #e5f6e5;
+            color: #00bd4f;
+        }
+
+        .status-failed {
+            background: #ffe8e5;
+            color: red;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Эксперименты</h1>
+            <button class="btn btn-primary" onclick="location.href='/experiments/create'">
+                + Новый эксперимент
+            </button>
+        </div>
+
+        <div class="controls">
+            <input type="text" class="search-input" placeholder="Поиск по названию...">
+            <select class="search-input status-filter" style="max-width: 200px;">
+                <option>Все статусы</option>
+                <option>В работе</option>
+                <option>Успешно</option>
+                <option>Неудача</option>
+            </select>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Когда принесли</th>
+                        <th>Название</th>
+                        <th>Задача</th>
+                        <th>Дата приготовления</th>
+                        <th>Статус</th>
+                        <th>Кто изготовил</th>
+                        <th>Кто выполнил</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for experiment in experiments %}
+                    <tr onclick="location.href='/experiments/{{ experiment.id }}'">
+                        <td>#{{ experiment.id }}</td>
+                        <td>{{ experiment.delivered }}</td>
+                        <td>{{ experiment.name }}</td>
+                        <td>{{ experiment.task }}</td>
+                        <td>{{ experiment.manufacture }}</td>
+                        <td>
+                            <span class="status
+                                {% if experiment.result == 'В работе' %}status-in-progress
+                                {% elif experiment.result == 'Неудача' %}status-failed
+                                {% elif experiment.result == 'Успешно' %}status-completed
+                                {% endif %}">
+                                {{ experiment.result }}
+                            </span>
+                        </td>
+                        <td>{{ experiment.creator }}</td>
+                        <td>{{ experiment.conducted }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Фильтрация по статусу
+        document.querySelector('.status-filter').addEventListener('change', function() {
+            const selectedStatus = this.value;
+            const rows = document.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const statusElement = row.querySelector('.status');
+                const status = statusElement ? statusElement.textContent.trim() : '';
+
+                if (selectedStatus === 'Все статусы' || status === selectedStatus) {
+                    row.style.display = 'table-row';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Поиск по названию
+        document.querySelector('.search-input[type="text"]').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const name = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                row.style.display = name.includes(searchTerm) ? 'table-row' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>
