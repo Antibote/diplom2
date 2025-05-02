@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import APIRouter, Depends, Request, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from models import Experiment
+from models import Experiment, User
 from database.db_depends import get_db
 from typing import Annotated
 
@@ -22,8 +22,14 @@ async def get_experiments(request: Request, db: Annotated[AsyncSession, Depends(
 
 
 @router.get("/create", response_class=HTMLResponse)
-async def show_form(request: Request):
-    return templates.TemplateResponse("create_experiment.html", {"request": request})
+async def show_form(request: Request, db: AsyncSession = Depends(get_db)):
+    print("🔥 show_form() вызван")
+    result = await db.execute(select(User).where(User.is_slave == True))
+    slaves = result.scalars().all()
+    return templates.TemplateResponse("create_experiment.html", {
+        "request": request,
+        "slaves": slaves
+    })
 
 
 @router.post("/create")
@@ -33,21 +39,31 @@ async def create_experiment(
         task: str = Form(...),
         delivered: str = Form(...),
         manufacture: str = Form(...),
-        creator: str = Form(...),
-        conducted: str = Form(...),
+        creator_id: int = Form(...),
+        conducted_id: int = Form(...),
         db: AsyncSession = Depends(get_db)
 ):
     try:
         delivered_dt = datetime.fromisoformat(delivered)
         manufacture_dt = datetime.fromisoformat(manufacture)
 
+        # Получаем пользователей по id
+        creator_result = await db.execute(select(User).where(User.id == creator_id))
+        creator = creator_result.scalar_one_or_none()
+
+        conducted_result = await db.execute(select(User).where(User.id == conducted_id))
+        conducted = conducted_result.scalar_one_or_none()
+
+        if not creator or not conducted:
+            raise ValueError("Неверный ответственный или исполнитель")
+
         db_experiment = Experiment(
             delivered=delivered_dt,
             name=name,
             task=task,
             manufacture=manufacture_dt,
-            creator=creator,
-            conducted=conducted
+            creator=creator.name,
+            conducted=conducted.name
         )
 
         db.add(db_experiment)
@@ -55,12 +71,12 @@ async def create_experiment(
 
         return RedirectResponse("/experiments", status_code=303)
 
-    except Exception as e:
-        await db.rollback()
-        return templates.TemplateResponse("create_experiment.html",
-                                          {"request": request, "error": str(e)},
-                                          status_code=400)
 
+    except Exception as e:
+        result = await db.execute(select(User).where(User.is_slave == True))
+        slaves = result.scalars().all()
+        return templates.TemplateResponse("create_experiment.html",
+                                          {"request": request, "error": str(e), "slaves": slaves}, status_code=400)
 
 @router.get("/{id}")
 async def get_on_id(request: Request, id : int,db: Annotated[AsyncSession, Depends(get_db)]):
