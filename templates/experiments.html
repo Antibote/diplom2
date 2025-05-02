@@ -38,6 +38,11 @@
             font-size: 2rem;
         }
 
+        .header-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
         .controls {
             display: flex;
             gap: 1rem;
@@ -78,6 +83,17 @@
             background: #c0392b;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(231, 76, 60, 0.2);
+        }
+
+        .btn-secondary {
+            background: #2d2d2d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #95a5a6;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(189, 195, 199, 0.2);
         }
 
         .table-container {
@@ -136,9 +152,14 @@
     <div class="container">
         <div class="header">
             <h1>Эксперименты</h1>
-            <button class="btn btn-primary" onclick="location.href='/experiments/create'">
-                + Новый эксперимент
-            </button>
+            <div class="header-buttons">
+                <button class="btn btn-primary" onclick="location.href='/experiments/create'">
+                    + Новый эксперимент
+                </button>
+                <form action="/logout" method="get">
+                    <button type="submit" class="btn btn-secondary">Выйти</button>
+                </form>
+            </div>
         </div>
 
         <div class="controls">
@@ -166,7 +187,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for experiment in experiments %}
+                    {% for experiment in experiments[::-1] %}
                     <tr onclick="location.href='/experiments/{{ experiment.id }}'">
                         <td>#{{ experiment.id }}</td>
                         <td>{{ experiment.delivered }}</td>
@@ -192,7 +213,7 @@
     </div>
 
     <script>
-        // Фильтрация по статусу
+         // Фильтрация по статусу
         document.querySelector('.status-filter').addEventListener('change', function() {
             const selectedStatus = this.value;
             const rows = document.querySelectorAll('tbody tr');

@@ -152,6 +152,7 @@
             50% { transform: scale(1.1); }
         }
 
+
     </style>
 </head>
 <body>
@@ -162,9 +163,10 @@
 
     <div class="auth-container">
         <div class="logo">
-            <img src="static/background.png" alt="Logo">
+            <img src="/static/background.png" alt="Logo">
             <h1>Lab Analytics</h1>
         </div>
+
 
         <form action="/login" method="post">
             <div class="input-group">
@@ -176,6 +178,12 @@
                 <input type="password" name="password" required>
                 <label>Пароль</label>
             </div>
+
+            {% if error_message %}
+            <div style="color: #e74c3c; margin-bottom: 1rem; text-align: center;">
+                {{ error_message }}
+            </div>
+            {% endif %}
 
             <button type="submit">Войти в систему</button>
         </form>

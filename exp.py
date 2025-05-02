@@ -1,11 +1,10 @@
 from datetime import datetime
 
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi import APIRouter, Depends, Request, HTTPException, Form
+from fastapi import APIRouter, Depends, Request, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from models import Experiment
-from schemas import CreateExperiment
 from database.db_depends import get_db
 from typing import Annotated
 
