@@ -153,6 +153,11 @@
         <div class="header">
             <h1>Эксперименты</h1>
             <div class="header-buttons">
+                {% if current_user.is_admin %}
+            <button class="btn btn-secondary" onclick="location.href='/admin-panel'">
+            Панель администратора
+            </button>
+                {% endif %}
                 <button class="btn btn-primary" onclick="location.href='/experiments/create'">
                     + Новый эксперимент
                 </button>

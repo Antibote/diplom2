@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Управление пользователями</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f6f8;
+            padding: 2rem;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 2rem;
+        }
+
+        .user-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            margin-bottom: 1rem;
+            color: #34495e;
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+            table-layout: fixed;
+        }
+
+        .user-table th, .user-table td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .user-table th:nth-child(1),
+        .user-table td:nth-child(1) {
+            width: 10%;
+        }
+
+        .user-table th:nth-child(2),
+        .user-table td:nth-child(2) {
+            width: 40%;
+        }
+
+        .user-table th:nth-child(3),
+        .user-table td:nth-child(3) {
+            width: 20%;
+        }
+
+        .user-table th:nth-child(4),
+        .user-table td:nth-child(4) {
+            width: 30%;
+        }
+
+        form {
+            display: inline;
+        }
+
+        .btn {
+            padding: 0.4rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #c0392b;
+            color: white;
+            transition: background 0.3s ease;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #c0392b;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-input {
+            margin-bottom: 1rem;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            width: 100%;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+<a href="/admin-panel" class="back-button">← Вернуться</a>
+<h1>Управление пользователями</h1>
+
+<div class="user-section">
+    <h2>Активные пользователи</h2>
+    <input type="text" class="search-input" placeholder="Поиск по имени..." onkeyup="filterTable(this, 'active-table')">
+    <table class="user-table" id="active-table">
+        <tr>
+            <th>ID</th>
+            <th>Имя</th>
+            <th>Статус</th>
+            <th>Действие</th>
+        </tr>
+        {% for user in active_users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.name }}</td>
+            <td>Активен</td>
+            <td>
+                <form method="post" action="/admin-panel/toggle-user-status">
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <button class="btn" type="submit">Деактивировать</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="user-section">
+    <h2>Неактивные пользователи</h2>
+    <input type="text" class="search-input" placeholder="Поиск по имени..." onkeyup="filterTable(this, 'inactive-table')">
+    <table class="user-table" id="inactive-table">
+        <tr>
+            <th>ID</th>
+            <th>Имя</th>
+            <th>Статус</th>
+            <th>Действие</th>
+        </tr>
+        {% for user in inactive_users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.name }}</td>
+            <td>Неактивен</td>
+            <td>
+                <form method="post" action="/admin-panel/toggle-user-status">
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <button class="btn" type="submit">Активировать</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<script>
+function filterTable(input, tableId) {
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById(tableId);
+    const rows = table.getElementsByTagName("tr");
+
+    // Пропускаем первую строку (заголовки)
+    for (let i = 1; i < rows.length; i++) {
+        const nameCell = rows[i].getElementsByTagName("td")[1];
+        if (nameCell) {
+            const name = nameCell.textContent.toLowerCase();
+            rows[i].style.display = name.includes(filter) ? "" : "none";
+        }
+    }
+}
+</script>
+
+</body>
+</html>

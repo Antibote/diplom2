@@ -3,7 +3,8 @@ from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from exp import router as ro_exp
 from auth import router as ro_au, verify_auth
-from user_creation import router as ro_uc
+from admin_panel import router as admin_panel
+
 from fastapi.templating import Jinja2Templates
 
 
@@ -24,7 +25,8 @@ async def welcome(request: Request, error: str = None):
 
 app.include_router(ro_exp, dependencies=[Depends(verify_auth)])
 app.include_router(ro_au)
-app.include_router(ro_uc, dependencies=[Depends(verify_auth)])
+
+app.include_router(admin_panel, dependencies=[Depends(verify_auth)])
 
 if __name__ == '__main__':
     uvicorn.run("main:app", reload=True, port=5220)

@@ -8,23 +8,31 @@ from models import Experiment, User
 from database.db_depends import get_db
 from typing import Annotated
 
+from auth import get_current_user
+
 from fastapi.templating import Jinja2Templates
 
 templates = Jinja2Templates(directory="templates")
 
 router = APIRouter(prefix='/experiments', tags=['Experiments'])
 
-# Получить все эксперименты
 @router.get("/")
-async def get_experiments(request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
+async def get_experiments(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)]
+):
     experiments = await db.scalars(select(Experiment))
-    return templates.TemplateResponse("experiments.html", {"request":request, "experiments":experiments.all()})
+    return templates.TemplateResponse("experiments.html", {
+        "request": request,
+        "experiments": experiments.all(),
+        "current_user": current_user
+    })
 
 
 @router.get("/create", response_class=HTMLResponse)
 async def show_form(request: Request, db: AsyncSession = Depends(get_db)):
-    print("🔥 show_form() вызван")
-    result = await db.execute(select(User).where(User.is_slave == True))
+    result = await db.execute(select(User).where(User.is_slave == True, User.is_active == True))
     slaves = result.scalars().all()
     return templates.TemplateResponse("create_experiment.html", {
         "request": request,
