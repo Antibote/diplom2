@@ -21,7 +21,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter()
 
-# В этом же файле (с аутентификацией)
+
 async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db)
