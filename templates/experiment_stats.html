@@ -140,6 +140,7 @@
                 <th>Сотрудник</th>
                 <th>Всего</th>
                 <th>Успешно</th>
+                <th>Неудача</th>
                 <th>% Успеха</th>
             </tr>
         </thead>
@@ -149,6 +150,7 @@
                 <td>{{ user.name }}</td>
                 <td>{{ user.total }}</td>
                 <td>{{ user.success }}</td>
+                <td>{{ user.fail }}</td>
                 <td>{{ user.success_percent }}%</td>
             </tr>
             {% endfor %}

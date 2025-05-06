@@ -121,7 +121,7 @@
             background: #3d4047;
             border: none;
             color: white;
-            font-size: 13px;
+            font-size: 28px;
             padding: 5px 10px;
             border-radius: 6px;
             cursor: pointer;
@@ -193,16 +193,6 @@
             box-shadow: 0 5px 15px rgba(231, 76, 60, 0.2);
         }
 
-        .btn-secondary {
-            background: #2d2d2d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #95a5a6;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(189, 195, 199, 0.2);
-        }
 
         .table-container {
             overflow-x: auto;
@@ -260,10 +250,9 @@
 
     <div class="sidebar" id="sidebar">
         <div class="logo"></div>
-        <button class="close-sidebar-btn" onclick="toggleSidebar()">Назад</button>
+        <button class="close-sidebar-btn" onclick="toggleSidebar()">🏃‍♂️</button>
         <nav>
             <a href="/user_profile">Личный кабинет</a>
-            <a href="/experiments">Эксперименты</a>
             {% if current_user.is_director %}
             <a href="/experiments/stats">Аналитика</a>
             {% endif %}

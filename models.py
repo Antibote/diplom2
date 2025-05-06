@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
-from database.db import Base
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Float
 from sqlalchemy.orm import relationship
+from database.db import Base
 
 
 class Experiment(Base):
@@ -14,16 +14,30 @@ class Experiment(Base):
     result = Column(String, nullable=False, default="В работе")
     creator = Column(String(100), nullable=False)
 
-    # Новый внешний ключ
     conducted_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     conducted_user = relationship("User", foreign_keys=[conducted_id])
 
     comment = Column(String(255), nullable=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
 
+    # Отношение: составы, связанные с экспериментом
+    compositions = relationship("Composition", back_populates="experiment", cascade="all, delete-orphan")
+
+
+class Composition(Base):
+    __tablename__ = "compositions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    experiment_id = Column(Integer, ForeignKey("experiments.id"), nullable=False)
+    element = Column(String(50), nullable=False)
+    percentage = Column(Float, nullable=False)
+
+    experiment = relationship("Experiment", back_populates="compositions")
+
 
 class User(Base):
     __tablename__ = "users"
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
     post = Column(String)
@@ -33,6 +47,4 @@ class User(Base):
     is_director = Column(Boolean, default=False)
     is_slave = Column(Boolean, default=True)
 
-    # Отношение: эксперименты, которые пользователь провёл
     experiments_conducted = relationship("Experiment", back_populates="conducted_user", foreign_keys="Experiment.user_id")
-

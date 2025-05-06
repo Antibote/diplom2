@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
-from models import Experiment, User
+from models import Experiment, User, Composition
 from database.db_depends import get_db
-from typing import Annotated
+from typing import Annotated, List
 
 from auth import get_current_user
 
@@ -60,20 +60,22 @@ async def show_form(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.post("/create")
 async def create_experiment(
-        request: Request,
-        name: str = Form(...),
-        task: str = Form(...),
-        delivered: str = Form(...),
-        manufacture: str = Form(...),
-        creator_id: int = Form(...),
-        conducted_id: int = Form(...),  # Используем ID для исполнителя
-        db: AsyncSession = Depends(get_db)
+    request: Request,
+    name: str = Form(...),
+    task: str = Form(...),
+    delivered: str = Form(...),
+    manufacture: str = Form(...),
+    creator_id: int = Form(...),
+    conducted_id: int = Form(...),
+    elements: List[str] = Form(...),
+    percentages: List[float] = Form(...),
+    db: AsyncSession = Depends(get_db)
 ):
     try:
         delivered_dt = datetime.fromisoformat(delivered)
         manufacture_dt = datetime.fromisoformat(manufacture)
 
-        # Получаем пользователей по id
+        # Получаем пользователей
         creator_result = await db.execute(select(User).where(User.id == creator_id))
         creator = creator_result.scalar_one_or_none()
 
@@ -83,24 +85,37 @@ async def create_experiment(
         if not creator or not conducted:
             raise ValueError("Неверный ответственный или исполнитель")
 
+        # Создание эксперимента
         db_experiment = Experiment(
             delivered=delivered_dt,
             name=name,
             task=task,
             manufacture=manufacture_dt,
-            creator=creator.name,  # имя для создателя
-            conducted_id=conducted_id  # сохраняем ID исполнителя
+            creator=creator.name,
+            conducted_id=conducted_id
         )
 
         db.add(db_experiment)
-        await db.commit()
+        await db.flush()  # Получаем ID эксперимента до commit
 
+        # Добавление состава
+        for element, percentage in zip(elements, percentages):
+            composition = Composition(
+                experiment_id=db_experiment.id,
+                element=element.strip(),
+                percentage=percentage
+            )
+            db.add(composition)
+
+        await db.commit()
         return RedirectResponse("/experiments", status_code=303)
+
     except Exception as e:
-        result = await db.execute(select(User).where(User.is_slave == True))
+        result = await db.execute(select(User).where(User.is_slave == True, User.is_active == True))
         slaves = result.scalars().all()
         return templates.TemplateResponse("create_experiment.html",
-                                          {"request": request, "error": str(e), "slaves": slaves}, status_code=400)
+                                          {"request": request, "error": str(e), "slaves": slaves},
+                                          status_code=400)
 
 
 
@@ -126,21 +141,23 @@ async def experiments_stats(
     stmt = select(
         User.name,
         func.count(Experiment.id).label("total"),
-        func.sum(case((Experiment.result == "Успешно", 1), else_=0)).label("success_count")
+        func.sum(case((Experiment.result == "Успешно", 1), else_=0)).label("success_count"),
+        func.sum(case((Experiment.result == "Неудача", 1), else_=0)).label("fail_count")
     ).join(Experiment, Experiment.conducted_id == User.id).group_by(User.name)
 
     result = await db.execute(stmt)
     per_user = result.all()
-
     user_stats = [
         {
             "name": row[0],
             "total": row[1],
             "success": row[2],
+            "fail": row[3],
             "success_percent": round(row[2] / row[1] * 100, 2) if row[1] else 0
         }
         for row in per_user
     ]
+
     experiments_result = await db.execute(
         select(Experiment).order_by(Experiment.id.desc())
     )
@@ -164,16 +181,25 @@ async def experiments_stats(
 
 @router.get("/compare")
 async def compare_experiments(request: Request, id1: int, id2: int, db: AsyncSession = Depends(get_db)):
-    exp1 = await db.scalar(
+    # Получаем данные для первого эксперимента
+    exp1 = await db.execute(
         select(Experiment)
-        .options(selectinload(Experiment.conducted_user))
+        .options(selectinload(Experiment.conducted_user), selectinload(Experiment.compositions))
         .where(Experiment.id == id1)
     )
-    exp2 = await db.scalar(
+    exp1 = exp1.scalar_one_or_none()
+
+    # Получаем данные для второго эксперимента
+    exp2 = await db.execute(
         select(Experiment)
-        .options(selectinload(Experiment.conducted_user))
+        .options(selectinload(Experiment.conducted_user), selectinload(Experiment.compositions))
         .where(Experiment.id == id2)
     )
+    exp2 = exp2.scalar_one_or_none()
+
+    if not exp1 or not exp2:
+        return HTMLResponse(content="Один из экспериментов не найден", status_code=404)
+
     return templates.TemplateResponse("compare_experiments.html", {
         "request": request,
         "exp1": exp1,
@@ -184,9 +210,22 @@ async def compare_experiments(request: Request, id1: int, id2: int, db: AsyncSes
 
 
 @router.get("/{id}")
-async def get_on_id(request: Request, id : int,db: Annotated[AsyncSession, Depends(get_db)]):
-    experiment = await db.scalar(select(Experiment).where(Experiment.id == id))
-    return templates.TemplateResponse("experiment_detail.html", {"request":request, "experiment":experiment})
+async def get_on_id(request: Request, id: int, db: Annotated[AsyncSession, Depends(get_db)]):
+    experiment = await db.scalar(
+        select(Experiment)
+        .where(Experiment.id == id)
+        .options(selectinload(Experiment.compositions))  # загрузка состава
+    )
+    if not experiment:
+        return templates.TemplateResponse(
+            "experiment_detail.html",
+            {"request": request, "error": "Эксперимент не найден."},
+            status_code=404
+        )
+    return templates.TemplateResponse(
+        "experiment_detail.html",
+        {"request": request, "experiment": experiment}
+    )
 
 @router.post("/{id}")
 async def update_experiment(request: Request,
@@ -222,5 +261,3 @@ async def update_experiment(request: Request,
             {"request": request, "error": str(e)},
             status_code=400
         )
-
-

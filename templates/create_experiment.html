@@ -38,6 +38,21 @@
                 <input type="text" name="name" required>
             </div>
 
+<div class="form-group">
+    <label class="required">Состав материала</label>
+    <div id="composition-container">
+        <div class="form-row">
+            <div class="form-col">
+                <input type="text" name="elements" placeholder="Элемент (например, Fe)" required>
+            </div>
+            <div class="form-col">
+                <input type="number" step="0.01" name="percentages" placeholder="% содержания" required>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-secondary" onclick="addCompositionRow()" style="margin-top: 1rem;">Добавить элемент</button>
+</div>
+
             <div class="form-group">
                 <label class="required">Тип исследования</label>
                 <select name="task" required>
@@ -97,4 +112,22 @@
         </form>
     </div>
 </body>
+<script>
+    function addCompositionRow() {
+        const container = document.getElementById("composition-container");
+
+        const row = document.createElement("div");
+        row.className = "form-row";
+        row.innerHTML = `
+            <div class="form-col">
+                <input type="text" name="elements" placeholder="Элемент (например, Fe)" required>
+            </div>
+            <div class="form-col">
+                <input type="number" step="0.01" name="percentages" placeholder="% содержания" required>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+</script>
+
 </html>

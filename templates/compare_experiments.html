@@ -44,21 +44,83 @@
         <tbody>
             {% set fields = {
                 "Название": ("name", exp1.name, exp2.name),
-                "Задача": ("task", exp1.task, exp2.task),
-                "Результат": ("result", exp1.result, exp2.result),
                 "Дата производства": ("manufacture", exp1.manufacture, exp2.manufacture),
-                "Дата поступления": ("delivered", exp1.delivered, exp2.delivered),
-                "Провёл": ("conducted_user", exp1.conducted_user.name if exp1.conducted_user else "—", exp2.conducted_user.name if exp2.conducted_user else "—"),
-                "Комментарий": ("comment", exp1.comment or "—", exp2.comment or "—")
+                "Дата поступления": ("delivered", exp1.delivered, exp2.delivered)
             } %}
 
             {% for label, (key, val1, val2) in fields.items() %}
+            <tr>
+                <td>{{ label }}</td>
+                <td>{{ val1 }}</td>
+                <td>{{ val2 }}</td>
+            </tr>
+            {% endfor %}
+
+            <tr><td colspan="3"><strong>Сравнение:</strong></td></tr>
+
+            {% set comparison_fields = {
+                "Задача": ("task", exp1.task, exp2.task),
+                "Результат": ("result", exp1.result, exp2.result),
+                "Провёл": ("conducted_user", exp1.conducted_user.name if exp1.conducted_user else "—", exp2.conducted_user.name if exp2.conducted_user else "—")
+            } %}
+
+            {% for label, (key, val1, val2) in comparison_fields.items() %}
             <tr class="{% if val1 != val2 %}diff{% endif %}">
                 <td>{{ label }}</td>
                 <td>{{ val1 }}</td>
                 <td>{{ val2 }}</td>
             </tr>
             {% endfor %}
+
+            <tr><td colspan="3"><strong>Состав:</strong></td></tr>
+            <tr>
+                <td>Состав</td>
+                <td>
+                    {% if exp1.compositions %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Элемент</th>
+                                    <th>Процент</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for comp in exp1.compositions %}
+                                <tr>
+                                    <td>{{ comp.element }}</td>
+                                    <td>{{ "%.2f"|format(comp.percentage) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        Нет данных о составе
+                    {% endif %}
+                </td>
+                <td>
+                    {% if exp2.compositions %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Элемент</th>
+                                    <th>Процент</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for comp in exp2.compositions %}
+                                <tr>
+                                    <td>{{ comp.element }}</td>
+                                    <td>{{ "%.2f"|format(comp.percentage) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        Нет данных о составе
+                    {% endif %}
+                </td>
+            </tr>
+
         </tbody>
     </table>
 </div>

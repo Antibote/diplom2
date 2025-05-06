@@ -169,6 +169,30 @@
                     <option value="Успешно" {% if experiment.result == "Успешно" %}selected{% endif %}>Успешно</option>
                 </select>
             </div>
+
+            <div class="form-group">
+                <label>Состав</label>
+                {% if experiment.compositions %}
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Элемент</th>
+                                <th>Процент</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for comp in experiment.compositions %}
+                            <tr>
+                                <td>{{ comp.element }}</td>
+                                <td>{{ "%.2f"|format(comp.percentage) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="static-field">Нет данных о составе</div>
+                {% endif %}
+            </div>
         </div>
         </form>
     </div>
