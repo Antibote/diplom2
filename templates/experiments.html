@@ -14,17 +14,125 @@
         body {
             background: #f8f9fa;
             color: #2c3e50;
+        }
+
+        .layout {
+            display: flex;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #3d4047;
+            color: white;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: -240px;
+            height: 100vh;
+            z-index: 1000;
+            transition: left 0.3s ease;
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .sidebar .logo {
+            width: 100px;
+            height: 100px;
+            background-image: url("/static/background.png");
+            background-size: cover;
+            background-position: center;
+            border-radius: 50%;
+            margin-bottom: 2rem;
+        }
+
+        .sidebar nav {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .sidebar a,
+        .logout-btn {
+            display: block;
+            padding: 10px 15px;
+            border: none;
+            background: none;
+            color: white;
+            text-align: left;
+            width: 100%;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background 0.2s;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .sidebar a:hover,
+        .logout-btn:hover {
+            background: #495460;
+        }
+
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            background: #3d4047;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .menu-toggle:hover {
+            background: #2c3e50;
+        }
+
+        .content {
+            margin-left: 0;
             padding: 2rem;
+            transition: margin-left 0.3s ease;
+            flex-grow: 1;
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto;
         }
 
         .container {
-            max-width: 1500px;
-            margin: 0 auto;
             background: white;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
             padding: 2rem;
         }
+
+        .close-sidebar-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: #3d4047;
+            border: none;
+            color: white;
+            font-size: 13px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            z-index: 10;
+        }
+
+        .close-sidebar-btn:hover {
+            background: #495460;
+        }
+
 
         .header {
             display: flex;
@@ -145,98 +253,132 @@
             background: #ffe8e5;
             color: red;
         }
-
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Эксперименты</h1>
-            <div class="header-buttons">
-                {% if current_user.is_admin %}
-            <button class="btn btn-secondary" onclick="location.href='/admin-panel'">
-            Панель администратора
-            </button>
-                {% endif %}
-                <button class="btn btn-primary" onclick="location.href='/experiments/create'">
-                    + Новый эксперимент
-                </button>
-                <form action="/logout" method="get">
-                    <button type="submit" class="btn btn-secondary">Выйти</button>
-                </form>
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+    <div class="sidebar" id="sidebar">
+        <div class="logo"></div>
+        <button class="close-sidebar-btn" onclick="toggleSidebar()">Назад</button>
+        <nav>
+            <a href="/user_profile">Личный кабинет</a>
+            <a href="/experiments">Эксперименты</a>
+            {% if current_user.is_director %}
+            <a href="/experiments/stats">Аналитика</a>
+            {% endif %}
+            {% if current_user.is_admin %}
+            <a href="/admin-panel">Панель администратора</a>
+            {% endif %}
+            <form action="/logout" method="get">
+                <button type="submit" class="logout-btn">ВЫЙТИ</button>
+            </form>
+        </nav>
+    </div>
+
+    <div class="content">
+        <div class="container">
+            <div class="header">
+                <h1>Эксперименты</h1>
+                <div class="header-buttons">
+                    <button class="btn btn-primary" onclick="location.href='/experiments/create'">+ Новый эксперимент</button>
+                </div>
             </div>
-        </div>
 
-        <div class="controls">
-            <input type="text" class="search-input" placeholder="Поиск по названию...">
-            <select class="search-input status-filter" style="max-width: 200px;">
-                <option>Все статусы</option>
-                <option>В работе</option>
-                <option>Успешно</option>
-                <option>Неудача</option>
-            </select>
-        </div>
+            <div class="controls">
+                <input type="text" class="search-input" placeholder="Поиск по названию...">
+                <select class="search-input status-filter" style="max-width: 200px;">
+                    <option>Все статусы</option>
+                    <option>В работе</option>
+                    <option>Успешно</option>
+                    <option>Неудача</option>
+                </select>
+            </div>
 
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Когда принесли</th>
-                        <th>Название</th>
-                        <th>Задача</th>
-                        <th>Дата приготовления</th>
-                        <th>Статус</th>
-                        <th>Кто изготовил</th>
-                        <th>Кто выполнил</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for experiment in experiments[::-1] %}
-                    <tr onclick="location.href='/experiments/{{ experiment.id }}'">
-                        <td>#{{ experiment.id }}</td>
-                        <td>{{ experiment.delivered }}</td>
-                        <td>{{ experiment.name }}</td>
-                        <td>{{ experiment.task }}</td>
-                        <td>{{ experiment.manufacture }}</td>
-                        <td>
-                            <span class="status
-                                {% if experiment.result == 'В работе' %}status-in-progress
-                                {% elif experiment.result == 'Неудача' %}status-failed
-                                {% elif experiment.result == 'Успешно' %}status-completed
-                                {% endif %}">
-                                {{ experiment.result }}
-                            </span>
-                        </td>
-                        <td>{{ experiment.creator }}</td>
-                        <td>{{ experiment.conducted }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Когда принесли</th>
+                            <th>Название</th>
+                            <th>Задача</th>
+                            <th>Дата приготовления</th>
+                            <th>Статус</th>
+                            <th>Кто изготовил</th>
+                            <th>Кто выполнил</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for experiment in experiments[::-1] %}
+                        <tr onclick="location.href='/experiments/{{ experiment.id }}'">
+                            <td>#{{ experiment.id }}</td>
+                            <td>{{ experiment.delivered }}</td>
+                            <td>{{ experiment.name }}</td>
+                            <td>{{ experiment.task }}</td>
+                            <td>{{ experiment.manufacture }}</td>
+                            <td>
+                                <span class="status
+                                    {% if experiment.result == 'В работе' %}status-in-progress
+                                    {% elif experiment.result == 'Неудача' %}status-failed
+                                    {% elif experiment.result == 'Успешно' %}status-completed
+                                    {% endif %}">
+                                    {{ experiment.result }}
+                                </span>
+                            </td>
+                            <td>{{ experiment.creator }}</td>
+                            <td>{{ experiment.conducted_user.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script>
-         // Фильтрация по статусу
-        document.querySelector('.status-filter').addEventListener('change', function() {
+        function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const toggleButton = document.querySelector('.menu-toggle');
+
+        sidebar.classList.toggle('active');
+
+        // Показать/скрыть кнопку "гамбургера"
+        if (sidebar.classList.contains('active')) {
+            toggleButton.style.display = 'none';
+        } else {
+            toggleButton.style.display = 'block';
+        }
+    }
+
+    // Скрыть сайдбар при клике вне его области
+    document.addEventListener('click', function (e) {
+        const sidebar = document.getElementById('sidebar');
+        const toggleButton = document.querySelector('.menu-toggle');
+        if (
+            sidebar.classList.contains('active') &&
+            !sidebar.contains(e.target) &&
+            !toggleButton.contains(e.target)
+        ) {
+            sidebar.classList.remove('active');
+            toggleButton.style.display = 'block';
+        }
+    });
+
+        document.querySelector('.status-filter').addEventListener('change', function () {
             const selectedStatus = this.value;
             const rows = document.querySelectorAll('tbody tr');
 
             rows.forEach(row => {
                 const statusElement = row.querySelector('.status');
                 const status = statusElement ? statusElement.textContent.trim() : '';
-
-                if (selectedStatus === 'Все статусы' || status === selectedStatus) {
-                    row.style.display = 'table-row';
-                } else {
-                    row.style.display = 'none';
-                }
+                row.style.display = (selectedStatus === 'Все статусы' || status === selectedStatus)
+                    ? 'table-row'
+                    : 'none';
             });
         });
 
-        // Поиск по названию
-        document.querySelector('.search-input[type="text"]').addEventListener('input', function(e) {
+        document.querySelector('.search-input[type="text"]').addEventListener('input', function (e) {
             const searchTerm = e.target.value.toLowerCase();
             const rows = document.querySelectorAll('tbody tr');
 

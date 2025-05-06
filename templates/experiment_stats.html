@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Аналитика | Лаборатория</title>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; background: #f8f9fa; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+        h1 { color: #e74c3c; }
+        h2 { color: #2c3e50; margin-top: 2rem; }
+        .stats { display: flex; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .card {
+            flex: 1;
+            background: #f1f1f1;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 120px;
+        }
+        .card h2 { margin-bottom: 0.5rem; color: #e74c3c; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border-bottom: 1px solid #ddd; padding: 0.75rem; text-align: left; }
+        th { background: #f9f9f9; color: #e74c3c; }
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #c0392b;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .compare-form {
+            background: #f1f1f1;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .compare-form label {
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        .compare-form select {
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .compare-form button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .compare-form button:hover {
+            background: #c0392b;
+        }
+
+           .compare-form-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background-color: #f9f9f9;
+        font-family: sans-serif;
+    }
+
+    .compare-form-container h2 {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+
+    .compare-form {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .compare-form label {
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 0.3rem;
+    }
+
+    .compare-form select {
+        padding: 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 1rem;
+    }
+
+    .compare-form button {
+        margin-top: 1rem;
+        padding: 0.6rem 1.2rem;
+        font-size: 1rem;
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .compare-form button:hover {
+        background-color: #c0392b;
+    }
+    </style>
+</head>
+
+<body>
+<a href="/experiments/" class="back-button">← Вернуться</a>
+<div class="container">
+    <h1>Аналитика по экспериментам</h1>
+
+    <div class="stats">
+        <div class="card"><h2>Всего</h2><div>{{ total }}</div></div>
+        <div class="card"><h2>Успешно</h2><div>{{ success }}</div></div>
+        <div class="card"><h2>Неудача</h2><div>{{ fail }}</div></div>
+        <div class="card"><h2>В работе</h2><div>{{ in_progress }}</div></div>
+        <div class="card"><h2>% Успешных</h2><div>{{ success_percent }}%</div></div>
+    </div>
+
+    <h2>По сотрудникам</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Сотрудник</th>
+                <th>Всего</th>
+                <th>Успешно</th>
+                <th>% Успеха</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in user_stats %}
+            <tr>
+                <td>{{ user.name }}</td>
+                <td>{{ user.total }}</td>
+                <td>{{ user.success }}</td>
+                <td>{{ user.success_percent }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="compare-form-container">
+    <h2>Сравнение экспериментов</h2>
+    <form action="/experiments/compare" method="get" class="compare-form">
+        <div>
+            <label for="id1">Эксперимент 1:</label>
+            <select name="id1" id="id1" required>
+                {% for exp in experiments %}
+                <option value="{{ exp.id }}">{{ exp.name }} (ID: {{ exp.id }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="id2">Эксперимент 2:</label>
+            <select name="id2" id="id2" required>
+                {% for exp in experiments %}
+                <option value="{{ exp.id }}">{{ exp.name }} (ID: {{ exp.id }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit">Сравнить</button>
+    </form>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const select1 = document.getElementById("id1");
+        const select2 = document.getElementById("id2");
+
+        function updateSecondSelect() {
+            const selectedId1 = select1.value;
+
+            Array.from(select2.options).forEach(option => {
+                option.disabled = option.value === selectedId1;
+            });
+
+            // Автоматически переключить, если текущий выбранный — теперь недоступен
+            if (select2.value === selectedId1) {
+                for (let option of select2.options) {
+                    if (!option.disabled) {
+                        select2.value = option.value;
+                        break;
+                    }
+                }
+            }
+        }
+
+        select1.addEventListener("change", updateSecondSelect);
+        updateSecondSelect(); // инициализация при загрузке
+    });
+</script>
+</body>
+</html>

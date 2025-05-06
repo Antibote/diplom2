@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Сравнение экспериментов</title>
+    <style>
+        body { font-family: sans-serif; background: #f8f9fa; padding: 2rem; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #e74c3c; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+        th, td { padding: 0.75rem; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background: #f2f2f2; color: #e74c3c; }
+        tr.diff td { background-color: #ffe6e6; }
+        tr:hover td { background-color: #f9f9f9; }
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #c0392b;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+        .back-button:hover {
+            background: #a93226;
+        }
+    </style>
+</head>
+<body>
+<a href="/experiments/stats" class="back-button">← К аналитике</a>
+<div class="container">
+    <h1>Сравнение экспериментов</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Поле</th>
+                <th>Эксперимент 1</th>
+                <th>Эксперимент 2</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set fields = {
+                "Название": ("name", exp1.name, exp2.name),
+                "Задача": ("task", exp1.task, exp2.task),
+                "Результат": ("result", exp1.result, exp2.result),
+                "Дата производства": ("manufacture", exp1.manufacture, exp2.manufacture),
+                "Дата поступления": ("delivered", exp1.delivered, exp2.delivered),
+                "Провёл": ("conducted_user", exp1.conducted_user.name if exp1.conducted_user else "—", exp2.conducted_user.name if exp2.conducted_user else "—"),
+                "Комментарий": ("comment", exp1.comment or "—", exp2.comment or "—")
+            } %}
+
+            {% for label, (key, val1, val2) in fields.items() %}
+            <tr class="{% if val1 != val2 %}diff{% endif %}">
+                <td>{{ label }}</td>
+                <td>{{ val1 }}</td>
+                <td>{{ val2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
