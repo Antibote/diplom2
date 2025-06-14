@@ -299,7 +299,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for experiment in experiments[::-1] %}
+                        {% for experiment in experiments %}
                         <tr onclick="location.href='/experiments/{{ experiment.id }}'">
                             <td>#{{ experiment.id }}</td>
                             <td>{{ experiment.delivered }}</td>

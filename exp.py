@@ -24,28 +24,22 @@ router = APIRouter(prefix='/experiments', tags=['Experiments'])
 async def get_experiments(
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user)
 ):
-    if current_user.is_director:
-        result = await db.execute(
-            select(Experiment)
-            .options(selectinload(Experiment.conducted_user))  # важное изменение
-        )
-        experiments = result.scalars().all()
-    else:
-        # Логика для обычного пользователя
-        result = await db.execute(
-            select(Experiment)
-            .where(Experiment.conducted_user == current_user)
-            .options(selectinload(Experiment.conducted_user))
-        )
-        experiments = result.scalars().all()
+    query = select(Experiment).options(selectinload(Experiment.conducted_user)).order_by(Experiment.id.desc())
+
+    if not current_user.is_director:
+        query = query.where(Experiment.conducted_user == current_user)
+
+    result = await db.execute(query)
+    experiments = result.scalars().all()
 
     return templates.TemplateResponse("experiments.html", {
         "request": request,
         "experiments": experiments,
         "current_user": current_user
     })
+
 
 
 @router.get("/create", response_class=HTMLResponse)

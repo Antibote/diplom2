@@ -20,7 +20,6 @@ class Experiment(Base):
     comment = Column(String(255), nullable=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
 
-    # Отношение: составы, связанные с экспериментом
     compositions = relationship("Composition", back_populates="experiment", cascade="all, delete-orphan")
 
 
