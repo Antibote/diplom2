@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Аналитика сотрудника</title>
+  <!-- Подключаем Chart.js через CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background: #f8f9fa;
+      color: #2c3e50;
+    }
+
+    .layout {
+      display: flex;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: #3d4047;
+      color: white;
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: -240px;
+      height: 100vh;
+      z-index: 1000;
+      transition: left 0.3s ease;
+    }
+
+    .sidebar.active {
+      left: 0;
+    }
+
+    .sidebar .logo {
+      width: 100px;
+      height: 100px;
+      background-image: url("/static/background.png");
+      background-size: cover;
+      background-position: center;
+      border-radius: 50%;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar nav {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .sidebar a,
+    .logout-btn {
+      display: block;
+      padding: 10px 15px;
+      border: none;
+      background: none;
+      color: white;
+      text-align: left;
+      width: 100%;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background 0.2s;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .sidebar a:hover,
+    .logout-btn:hover {
+      background: #495460;
+    }
+
+    .menu-toggle {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1100;
+      background: #3d4047;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .menu-toggle:hover {
+      background: #2c3e50;
+    }
+
+    .content {
+      margin-left: 0;
+      padding: 2rem;
+      transition: margin-left 0.3s ease;
+      flex-grow: 1;
+      width: 100%;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    .container {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      padding: 2rem;
+    }
+
+    .close-sidebar-btn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: #3d4047;
+      border: none;
+      color: white;
+      font-size: 28px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      z-index: 10;
+    }
+
+    .close-sidebar-btn:hover {
+      background: #495460;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      color: #e74c3c;
+      font-size: 2rem;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    label {
+      margin-bottom: 8px;
+      color: #7f8c8d;
+      font-weight: 500;
+    }
+
+    select, input[type="date"] {
+      padding: 12px 15px;
+      border: 2px solid #eee;
+      border-radius: 8px;
+      background-color: white;
+      color: #2c3e50;
+      transition: all 0.3s;
+    }
+
+    select:focus, input[type="date"]:focus {
+      border-color: #e74c3c;
+      outline: none;
+      box-shadow: 0 0 10px rgba(231, 76, 60, 0.1);
+    }
+
+    .btn {
+      padding: 12px 25px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      align-self: flex-end;
+    }
+
+    .btn-primary {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #c0392b;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(231, 76, 60, 0.2);
+    }
+
+    .chart-container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 2rem;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      max-width: 500px;
+    }
+
+    .stats-card {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 2rem;
+    }
+
+    .stat-item {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 15px 20px;
+      min-width: 180px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #e74c3c;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      color: #7f8c8d;
+      font-size: 0.9rem;
+    }
+
+    .back-link { position: absolute; top: 20px; left: 80px; background: #c0392b; color: white; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: bold; transition: background 0.3s ease; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+  </style>
+</head>
+<body>
+  <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="logo"></div>
+    <button class="close-sidebar-btn" onclick="toggleSidebar()">🏃‍♂️</button>
+    <nav>
+      <a href="/user_profile">Личный кабинет</a>
+      {% if current_user.is_director %}
+      <a href="/analytics">Аналитика</a>
+      {% endif %}
+      {% if current_user.is_admin %}
+      <a href="/admin-panel">Панель администратора</a>
+      {% endif %}
+      <form action="/logout" method="get">
+        <button type="submit" class="logout-btn">ВЫЙТИ</button>
+      </form>
+    </nav>
+  </div>
+
+  <div class="content">
+    <div class="container">
+      <div class="header">
+        <h1>Аналитика сотрудника:
+          {% set sel = (employees | selectattr('id', 'equalto', selected_id) | list) %}
+          {% if sel %}
+            {{ sel[0].name }}
+          {% else %}
+            —
+          {% endif %}
+        </h1>
+      </div>
+
+      <form method="get" action="/analytics/employee" class="controls">
+        <div class="form-group">
+          <label>Сотрудник</label>
+          <select name="employee_id">
+            {% for emp in employees %}
+              <option value="{{ emp.id }}" {% if emp.id == selected_id %}selected{% endif %}>
+                {{ emp.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Период с</label>
+          <input type="date" name="start" value="{{ start }}">
+        </div>
+
+        <div class="form-group">
+          <label>по</label>
+          <input type="date" name="end" value="{{ end }}">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Обновить</button>
+      </form>
+
+      <div class="chart-container">
+        <canvas id="employeeChart"></canvas>
+      </div>
+
+      <div class="stats-card">
+        <div class="stat-item">
+          <div class="stat-value">{{ success_count }}</div>
+          <div class="stat-label">Успешных</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">{{ failure_count }}</div>
+          <div class="stat-label">Неудачных</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">{{ in_progress_count }}</div>
+          <div class="stat-label">В работе</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">{{ success_rate|round(1) }}%</div>
+          <div class="stat-label">Успешность</div>
+        </div>
+      </div>
+
+      <a href="{{ url_for('experiments_stats') }}" class="back-link">
+        ← К аналитике
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const ctx = document.getElementById('employeeChart');
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: ['Успешные', 'Неудачные', 'В работе'],
+        datasets: [{
+          data: [{{ success_count }}, {{ failure_count }}, {{ in_progress_count }}],
+          backgroundColor: ['#4caf50', '#f44336', '#ff9800']
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            labels: {
+              color: '#2c3e50',
+              font: {
+                size: 14
+              }
+            }
+          }
+        }
+      }
+    });
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const toggleButton = document.querySelector('.menu-toggle');
+      sidebar.classList.toggle('active');
+
+      if (sidebar.classList.contains('active')) {
+        toggleButton.style.display = 'none';
+      } else {
+        toggleButton.style.display = 'block';
+      }
+    }
+
+    document.addEventListener('click', function (e) {
+      const sidebar = document.getElementById('sidebar');
+      const toggleButton = document.querySelector('.menu-toggle');
+      if (
+        sidebar.classList.contains('active') &&
+        !sidebar.contains(e.target) &&
+        !toggleButton.contains(e.target)
+      ) {
+        sidebar.classList.remove('active');
+        toggleButton.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

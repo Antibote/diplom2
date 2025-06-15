@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Общая аналитика сотрудников</title>
+  <!-- Подключаем Chart.js через CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background: #f8f9fa;
+      color: #2c3e50;
+    }
+
+    .layout {
+      display: flex;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: #3d4047;
+      color: white;
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: -240px;
+      height: 100vh;
+      z-index: 1000;
+      transition: left 0.3s ease;
+    }
+
+    .sidebar.active {
+      left: 0;
+    }
+
+    .sidebar .logo {
+      width: 100px;
+      height: 100px;
+      background-image: url("/static/background.png");
+      background-size: cover;
+      background-position: center;
+      border-radius: 50%;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar nav {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .sidebar a,
+    .logout-btn {
+      display: block;
+      padding: 10px 15px;
+      border: none;
+      background: none;
+      color: white;
+      text-align: left;
+      width: 100%;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background 0.2s;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .sidebar a:hover,
+    .logout-btn:hover {
+      background: #495460;
+    }
+
+    .menu-toggle {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1100;
+      background: #3d4047;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .menu-toggle:hover {
+      background: #2c3e50;
+    }
+
+    .content {
+      margin-left: 0;
+      padding: 2rem;
+      transition: margin-left 0.3s ease;
+      flex-grow: 1;
+      width: 100%;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    .container {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      padding: 2rem;
+    }
+
+    .close-sidebar-btn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: #3d4047;
+      border: none;
+      color: white;
+      font-size: 28px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      z-index: 10;
+    }
+
+    .close-sidebar-btn:hover {
+      background: #495460;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      color: #e74c3c;
+      font-size: 2rem;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .btn {
+      padding: 12px 25px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #c0392b;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(231, 76, 60, 0.2);
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th, td {
+      padding: 15px 20px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: #f8f9fa;
+      color: #e74c3c;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background: #fff5f5;
+      transform: scale(1.005);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .details-link {
+      color: #e74c3c;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 15px;
+      border-radius: 8px;
+      background: rgba(231, 76, 60, 0.1);
+      transition: all 0.3s;
+    }
+
+    .details-link:hover {
+      background: rgba(231, 76, 60, 0.2);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="logo"></div>
+    <button class="close-sidebar-btn" onclick="toggleSidebar()">🏃‍♂️</button>
+    <nav>
+      <a href="/user_profile">Личный кабинет</a>
+      {% if current_user.is_director %}
+      <a href="/experiments/stats">Аналитика</a>
+      {% endif %}
+      {% if current_user.is_admin %}
+      <a href="/admin-panel">Панель администратора</a>
+      {% endif %}
+      <form action="/logout" method="get">
+        <button type="submit" class="logout-btn">ВЫЙТИ</button>
+      </form>
+    </nav>
+  </div>
+
+  <div class="content">
+    <div class="container">
+      <div class="header">
+        <h1>Общая аналитика сотрудников</h1>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Сотрудник</th>
+              <th>Успешных</th>
+              <th>Неудачных</th>
+              <th>Всего</th>
+              <th>Успешность, %</th>
+              <th>Детали</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in stats %}
+            <tr>
+              <td>{{ u.name }}</td>
+              <td>{{ u.success }}</td>
+              <td>{{ u.fail }}</td>
+              <td>{{ u.success + u.fail }}</td>
+              <td>{{ ((u.success / (u.success + u.fail) * 100) if (u.success + u.fail) else 0) | round(1) }}</td>
+              <td>
+                <a href="{{ url_for('employee_analytics') }}?employee_id={{ u.id }}&start={{ default_start }}&end={{ default_end }}"
+                   class="details-link">
+                  Посмотреть
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const toggleButton = document.querySelector('.menu-toggle');
+      sidebar.classList.toggle('active');
+
+      if (sidebar.classList.contains('active')) {
+        toggleButton.style.display = 'none';
+      } else {
+        toggleButton.style.display = 'block';
+      }
+    }
+
+    document.addEventListener('click', function (e) {
+      const sidebar = document.getElementById('sidebar');
+      const toggleButton = document.querySelector('.menu-toggle');
+      if (
+        sidebar.classList.contains('active') &&
+        !sidebar.contains(e.target) &&
+        !toggleButton.contains(e.target)
+      ) {
+        sidebar.classList.remove('active');
+        toggleButton.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
