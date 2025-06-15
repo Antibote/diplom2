@@ -7,10 +7,25 @@ from admin_panel import router as admin_panel
 from user_profile import router as user_profile
 from analytics import router as analytics
 from fastapi.templating import Jinja2Templates
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 templates = Jinja2Templates(directory="templates")
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code == HTTP_401_UNAUTHORIZED:
+        return templates.TemplateResponse("errors/401.html", {"request": request}, status_code=401)
+    if exc.status_code == HTTP_404_NOT_FOUND:
+        return templates.TemplateResponse("errors/404.html", {"request": request}, status_code=404)
+    return templates.TemplateResponse("errors/500.html", {"request": request}, status_code=exc.status_code)
+
+@app.exception_handler(Exception)
+async def custom_internal_error_handler(request: Request, exc: Exception):
+    return templates.TemplateResponse("errors/500.html", {"request": request}, status_code=500)
+
 
 @app.get("/", tags=["Главное Меню"])
 async def welcome(request: Request, error: str = None):
