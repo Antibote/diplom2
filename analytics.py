@@ -1,27 +1,10 @@
 from datetime import datetime, timedelta
-
 from fastapi import APIRouter, Depends, Request, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import selectinload
-from fastapi.responses import HTMLResponse
-from database.db_depends import get_db
-from models import Experiment, User
-from auth import get_current_user
-from typing import Annotated
-
-templates = Jinja2Templates(directory="templates")
-router = APIRouter(prefix="/analytics", tags=["Analytics"])
-
-from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, Request, HTTPException, Query
-from fastapi.responses import HTMLResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, case
-from sqlalchemy.orm import selectinload
-from fastapi.templating import Jinja2Templates
-
+from fastapi.responses import HTMLResponse, JSONResponse
 from database.db_depends import get_db
 from models import Experiment, User
 from auth import get_current_user
@@ -197,30 +180,84 @@ async def employee_analytics(
     )
 
 
-@router.get("/compare")
-async def compare_experiments(request: Request, id1: int, id2: int, db: AsyncSession = Depends(get_db)):
-    # Получаем данные для первого эксперимента
-    exp1 = await db.execute(
-        select(Experiment)
-        .options(selectinload(Experiment.conducted_user), selectinload(Experiment.compositions))
-        .where(Experiment.id == id1)
+
+COMPOSITION_RULES = {
+    'X': 40.0,
+    'Y': 20.0,
+}
+
+@router.get("/compare", response_class=HTMLResponse)
+async def compare_experiments_html(request: Request, id1: int, id2: int,
+                                   db: AsyncSession = Depends(get_db),
+                                   current_user=Depends(get_current_user)):
+    return templates.TemplateResponse(
+        "compare_experiments.html",
+        {"request": request, "id1": id1, "id2": id2}
     )
-    exp1 = exp1.scalar_one_or_none()
+@router.get("/compare/data", name="compare_experiments_data")
+async def compare_experiments_data(id1: int, id2: int,
+                                   db: AsyncSession = Depends(get_db),
+                                   current_user=Depends(get_current_user)):
+    # Получаем оба эксперимента с составом и юзером
+    stmt = select(Experiment).options(
+        selectinload(Experiment.compositions),
+        selectinload(Experiment.conducted_user)
+    ).where(Experiment.id.in_([id1, id2]))
+    result = await db.execute(stmt)
+    exps = result.scalars().all()
+    if len(exps) != 2:
+        raise HTTPException(404, "Один из экспериментов не найден")
+    exp1, exp2 = sorted(exps, key=lambda e: e.id)
 
-    # Получаем данные для второго эксперимента
-    exp2 = await db.execute(
-        select(Experiment)
-        .options(selectinload(Experiment.conducted_user), selectinload(Experiment.compositions))
-        .where(Experiment.id == id2)
-    )
-    exp2 = exp2.scalar_one_or_none()
+    # Подготовка состава для графиков
+    def comp_dict(exp):
+        return {c.element: c.percentage for c in exp.compositions}
+    comp1, comp2 = comp_dict(exp1), comp_dict(exp2)
+    all_elements = sorted(set(comp1) | set(comp2))
+    comp_data = {
+        "labels": all_elements,
+        "exp1": [comp1.get(el, 0) for el in all_elements],
+        "exp2": [comp2.get(el, 0) for el in all_elements],
+    }
 
-    if not exp1 or not exp2:
-        return HTMLResponse(content="Один из экспериментов не найден", status_code=404)
+    # Анализ состава: предупреждения по правилам
+    comp_warnings = []
+    for elem, threshold in COMPOSITION_RULES.items():
+        for idx, comp in enumerate((comp1, comp2), start=1):
+            val = comp.get(elem, 0)
+            if val > threshold:
+                comp_warnings.append(
+                    f"Эксперимент {idx}: элемент {elem} = {val:.1f}% (> {threshold}%) может влиять на неудачу."
+                )
 
-    return templates.TemplateResponse("compare_experiments.html", {
-        "request": request,
-        "exp1": exp1,
-        "exp2": exp2
+    # Сравнение состава: различия и совпадения
+    comp_diffs = []
+    for el in all_elements:
+        v1, v2 = comp1.get(el, 0), comp2.get(el, 0)
+        if v1 != v2:
+            delta = v2 - v1
+            direction = 'увеличился' if delta > 0 else 'уменьшился'
+            comp_diffs.append(
+                f"{el}: в 2-м эксперименте {direction} на {abs(delta):.1f} (из {v1:.1f} в {v2:.1f})."
+            )
+    # Совпадающие элементы
+    comp_same = [el for el in all_elements if comp1.get(el, 0) == comp2.get(el, 0)]
+
+    # Сравнение исполнителя и создателя
+    human_notes = []
+    if exp1.conducted_user and exp2.conducted_user and exp1.conducted_user.id != exp2.conducted_user.id:
+        human_notes.append(
+            f"Разные исполнители: {exp1.conducted_user.name} и {exp2.conducted_user.name}."
+        )
+    if exp1.creator != exp2.creator:
+        human_notes.append(f"Разные создатели: {exp1.creator} и {exp2.creator}.")
+
+    # Итоговый JSON
+    return JSONResponse({
+        "comp_data": comp_data,
+        "total": {"exp1": exp1.id, "exp2": exp2.id},
+        "human": human_notes,
+        "composition_warnings": comp_warnings,
+        "composition_differences": comp_diffs,
+        "composition_same": comp_same,
     })
-

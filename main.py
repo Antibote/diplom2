@@ -8,7 +8,7 @@ from user_profile import router as user_profile
 from analytics import router as analytics
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
+from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 
 templates = Jinja2Templates(directory="templates")
 app = FastAPI()

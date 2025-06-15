@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Сравнение экспериментов</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: sans-serif; background: #f8f9fa; padding: 2rem; }
         .container { max-width: 900px; margin: auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
@@ -27,102 +28,119 @@
         .back-button:hover {
             background: #a93226;
         }
-    </style>
+     .chart-row { display: flex; gap: 1rem; justify-content: center; }
+    .chart-wrapper { width: 400px; height: 400px; }
+    .bar-wrapper { width: 600px; height: 300px; margin: 0 auto; }
+    .warning { background: #ffe6e6; padding: 0.5rem; margin: 0.5rem 0; border-left: 4px solid #e74c3c; }
+  </style>
 </head>
 <body>
-<a href="/analytics" class="back-button">← К аналитике</a>
-<div class="container">
+  <a href="/analytics" class="back-button">← К аналитике</a>
+  <div class="container">
     <h1>Сравнение экспериментов</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Поле</th>
-                <th>Эксперимент 1</th>
-                <th>Эксперимент 2</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% set fields = {
-                "Название": ("name", exp1.name, exp2.name),
-                "Дата производства": ("manufacture", exp1.manufacture, exp2.manufacture),
-                "Дата поступления": ("delivered", exp1.delivered, exp2.delivered)
-            } %}
+    <div class="chart-row">
+      <div class="chart-wrapper">
+        <canvas id="pieChart1"></canvas>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="pieChart2"></canvas>
+      </div>
+    </div>
+    <div class="bar-wrapper">
+      <canvas id="barChart"></canvas>
+    </div>
 
-            {% for label, (key, val1, val2) in fields.items() %}
-            <tr>
-                <td>{{ label }}</td>
-                <td>{{ val1 }}</td>
-                <td>{{ val2 }}</td>
-            </tr>
-            {% endfor %}
+    <section id="analysis">
+    <h2 style="color:#e74c3c;">Автоматический анализ</h2>
 
-            <tr><td colspan="3"><strong>Сравнение:</strong></td></tr>
+  <!-- Предупреждения по порогам -->
+  <div id="warnings"></div>
 
-            {% set comparison_fields = {
-                "Задача": ("task", exp1.task, exp2.task),
-                "Результат": ("result", exp1.result, exp2.result),
-                "Провёл": ("conducted_user", exp1.conducted_user.name if exp1.conducted_user else "—", exp2.conducted_user.name if exp2.conducted_user else "—")
-            } %}
+  <!-- Заметки по исполнителю/создателю -->
+  <div id="human-notes"></div>
 
-            {% for label, (key, val1, val2) in comparison_fields.items() %}
-            <tr class="{% if val1 != val2 %}diff{% endif %}">
-                <td>{{ label }}</td>
-                <td>{{ val1 }}</td>
-                <td>{{ val2 }}</td>
-            </tr>
-            {% endfor %}
+  <!-- Новые секции -->
+  <h3 style="margin-top:1rem; color:#e74c3c;">Различия в составе</h3>
+  <div id="differences"></div>
 
-            <tr><td colspan="3"><strong>Состав:</strong></td></tr>
-            <tr>
-                <td>Состав</td>
-                <td>
-                    {% if exp1.compositions %}
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Элемент</th>
-                                    <th>Процент</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for comp in exp1.compositions %}
-                                <tr>
-                                    <td>{{ comp.element }}</td>
-                                    <td>{{ "%.2f"|format(comp.percentage) }}%</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
-                        Нет данных о составе
-                    {% endif %}
-                </td>
-                <td>
-                    {% if exp2.compositions %}
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Элемент</th>
-                                    <th>Процент</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for comp in exp2.compositions %}
-                                <tr>
-                                    <td>{{ comp.element }}</td>
-                                    <td>{{ "%.2f"|format(comp.percentage) }}%</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
-                        Нет данных о составе
-                    {% endif %}
-                </td>
-            </tr>
+  <h3 style="margin-top:1rem; color:#e74c3c;">Совпадающие элементы</h3>
+  <div id="same"></div>
+</section>
 
-        </tbody>
-    </table>
-</div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id1 = params.get('id1'), id2 = params.get('id2');
+    fetch(`/analytics/compare/data?id1=${id1}&id2=${id2}`)
+      .then(res => res.json())
+      .then(json => {
+        const labels = json.comp_data.labels;
+        const data1 = json.comp_data.exp1;
+        const data2 = json.comp_data.exp2;
+
+        // Pie charts
+        new Chart(document.getElementById('pieChart1'), {
+          type: 'pie', data: { labels, datasets: [{ data: data1 }] },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+        new Chart(document.getElementById('pieChart2'), {
+          type: 'pie', data: { labels, datasets: [{ data: data2 }] },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // Bar chart
+        new Chart(document.getElementById('barChart'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              { label: `Exp ${json.total.exp1}`, data: data1 },
+              { label: `Exp ${json.total.exp2}`, data: data2 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index' },
+            plugins: { tooltip: { enabled: true } }
+          }
+        });
+
+        // Анализ и подсказки
+        const warnDiv = document.getElementById('warnings');
+        json.composition_warnings.forEach(text => {
+          const el = document.createElement('div');
+          el.classList.add('warning');
+          el.textContent = text;
+          warnDiv.append(el);
+        });
+
+        const humanDiv = document.getElementById('human-notes');
+        json.human.forEach(text => {
+          const el = document.createElement('div');
+          el.textContent = text;
+          humanDiv.append(el);
+        });
+
+        // Различия в составе
+        const diffDiv = document.getElementById('differences');
+        if (json.composition_differences.length) {
+          json.composition_differences.forEach(text => {
+            const el = document.createElement('div');
+            el.textContent = text;
+            diffDiv.append(el);
+          });
+        } else {
+          diffDiv.textContent = 'Отличий в составе нет.';
+        }
+
+        // Совпадающие элементы
+        const sameDiv = document.getElementById('same');
+        if (json.composition_same.length) {
+          sameDiv.textContent = json.composition_same.join(', ');
+        } else {
+          sameDiv.textContent = 'Нет полных совпадений.';
+        };
+      });
+  </script>
 </body>
 </html>

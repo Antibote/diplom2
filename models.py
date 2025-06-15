@@ -2,7 +2,6 @@ from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, F
 from sqlalchemy.orm import relationship
 from database.db import Base
 
-
 class Experiment(Base):
     __tablename__ = "experiments"
 

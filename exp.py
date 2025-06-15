@@ -1,19 +1,13 @@
 from datetime import datetime
-
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi import APIRouter, Depends, Request, Form, HTTPException
+from fastapi import APIRouter, Depends, Request, Form
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-
 from models import Experiment, User, Composition
 from database.db_depends import get_db
 from typing import Annotated, List
-
 from auth import get_current_user
-
-from sqlalchemy import case
-
 from fastapi.templating import Jinja2Templates
 
 templates = Jinja2Templates(directory="templates")

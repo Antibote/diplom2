@@ -31,12 +31,50 @@
 <div class="container">
     <h1>Аналитика по экспериментам</h1>
 
-    <!-- Форма выбора периода -->
-    <form method="get" class="BackForm">
-        <label>Период с <input type="date" name="start" value="{{ default_start }}"></label>
-        <label>по <input type="date" name="end" value="{{ default_end }}"></label>
-        <button type="submit" class="details-link">Обновить</button>
-    </form>
+<!-- Форма выбора периода -->
+<form method="get" class="BackForm" style="
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f1f1f1;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+">
+  <label for="start" style="font-weight:600;color:#e74c3c;">Период с</label>
+  <input
+    id="start"
+    type="date"
+    name="start"
+    value="{{ default_start }}"
+    style="padding:0.6rem;font-size:1rem;border:1px solid #ddd;border-radius:6px;background:#fff;"
+  />
+
+  <label for="end" style="font-weight:600;color:#e74c3c;">по</label>
+  <input
+    id="end"
+    type="date"
+    name="end"
+    value="{{ default_end }}"
+    style="padding:0.6rem;font-size:1rem;border:1px solid #ddd;border-radius:6px;background:#fff;"
+  />
+
+  <button
+    type="submit"
+    class="details-link"
+    style="
+      padding:0.75rem 1.5rem;
+      font-size:1rem;
+      background:#e74c3c;
+      color:#fff;
+      border-radius:6px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.1);
+      justify-self:end;
+    "
+  >Обновить</button>
+</form>
 
     <div class="stats">
         <div class="card"><h2>Всего</h2><div>{{ total }}</div></div>
@@ -46,7 +84,7 @@
         <div class="card"><h2>% Успешных</h2><div>{{ success_percent }}%</div></div>
     </div>
 
-    <h2>По сотрудникам</h2>
+    <h2 style="color:#e74c3c;">По сотрудникам</h2>
     <table>
         <thead>
             <tr>

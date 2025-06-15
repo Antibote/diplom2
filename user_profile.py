@@ -3,9 +3,9 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import RedirectResponse
 
-from database.db_depends import get_db  # Предполагается, что у тебя уже есть get_db
+from database.db_depends import get_db
 from models import User
-from auth import get_current_user  # Зависимость для получения текущего пользователя
+from auth import get_current_user
 
 router = APIRouter(prefix='/user_profile', tags=['User Profile'])
 templates = Jinja2Templates(directory="templates")
